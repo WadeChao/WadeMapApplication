@@ -47,26 +47,26 @@ class Filter extends Component{
     if(response.status === 200 || response.status === 201) {
     }
     else{
-      console.log('Post route to Server error, please check your MockApi service is Running')
+      console.log('Post route to Server error, please check your MockApi service is Running on localhost:8080')
     }
   }
 
   handleStartAddressChanged = (event) => {
-    let isEmpty = (event.target.value !== '') ? true : false;
+    let isNonEmpty = (event.target.value !== '') ? true : false;
     this.setState(
       {
         startAddress:event.target.value,
-        startCheck:isEmpty,
+        startCheck:isNonEmpty,
         startWarning:false
       }
     );
   }
 
   handleDestAddressChanged = (event) => {
-    let isEmpty = (event.target.value !== '') ? true : false;
+    let isNonEmpty = (event.target.value !== '') ? true : false;
     this.setState({
         destinationAddress:event.target.value,
-        destinationCheck:isEmpty,
+        destinationCheck:isNonEmpty,
         destinationWarning:false
     });
   }
@@ -101,21 +101,16 @@ class Filter extends Component{
     } = this.props;
     if(startCheck && locReducer.startLocation.address !== startAddress){
       this.getLocationInfo(startAddress).then((value) => {
-        if(!destinationCheck){
-            updatDestinationLocation('', 0, 0);
-        }
         updateStartLocation(value.address,value.lat,value.lng);
         this.setState({isReadyGetStart:true});
-        this.handlePostRouteToServer();
       }).catch(error => {
         this.setState({isReadyGetStart:false, startWarning:true});
       });
     }
-    if(destinationCheck && locReducer.destinationLocation.address !== destinationAddress){
+    if(startCheck && destinationCheck){
       this.getLocationInfo(destinationAddress).then((value) => {
         updatDestinationLocation(value.address,value.lat,value.lng);
         this.setState({isReadyGetDest:true});
-        this.handlePostRouteToServer();
       }).catch(error => {
         this.setState({isReadyGetDest:false, destinationWarning:true});
       });
@@ -123,6 +118,7 @@ class Filter extends Component{
     else{
       updatDestinationLocation('', 0, 0);
     }
+    this.handlePostRouteToServer();
   }
 
   handleClickCancel = (event) => {
