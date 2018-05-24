@@ -64,7 +64,7 @@ class Map extends Component{
   }
 
   moveToLocation = (lat, lng) => {
-     var center = new google.maps.LatLng(lat, lng);
+     let center = new google.maps.LatLng(lat, lng);
      this.myMap.panTo(center);
  }
 

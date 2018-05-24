@@ -107,6 +107,7 @@ class Filter extends Component{
         this.setState({isReadyGetStart:false, startWarning:true});
       });
     }
+
     if(startCheck && destinationCheck){
       this.getLocationInfo(destinationAddress).then((value) => {
         updatDestinationLocation(value.address,value.lat,value.lng);
