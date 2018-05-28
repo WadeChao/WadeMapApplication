@@ -87,7 +87,8 @@ class Filter extends Component{
   }
 
   handleSumitSearch = (event) => {
-    event.preventDefault();
+    if(event !== undefined)
+      event.preventDefault();
     const {
       startAddress,
       destinationAddress,
@@ -122,6 +123,12 @@ class Filter extends Component{
     this.handlePostRouteToServer();
   }
 
+  handleKeyPress = (event) => {
+    if(event.which === 13) {
+      this.handleSumitSearch();
+    }
+  }
+
   handleClickCancel = (event) => {
     event.preventDefault();
     const {
@@ -151,13 +158,14 @@ class Filter extends Component{
     } = this.state;
     return <div className='filter'>
               <div className='filter-title'>Wade Route Application</div>
-              <form className='location-form'>
+              <form className='location-form' onSubmit={event => { event.preventDefault(); }}>
                   <input  type='text'
                           className='location-form-input'
                           name='startAddress'
                           placeholder='Start'
                           value={this.state.startAddress}
                           onChange={this.handleStartAddressChanged}
+                          onKeyPress={this.handleKeyPress}
                   />
                   {startWarning && <div className='warning-msg'>Start Location not found</div>}
                   <input  type="text"
@@ -166,10 +174,11 @@ class Filter extends Component{
                           placeholder='Destination'
                           value={this.state.destinationAddress}
                           onChange={this.handleDestAddressChanged}
+                          onKeyPress={this.handleKeyPress}
                   />
                   {destinationWarning && <div className='warning-msg'>Destination not found</div>}
-                  <button className='location-form-button' onClick={this.handleClickCancel}>Cancel<i className="fa fa-caret-right" aria-hidden="true"></i></button>
-                  <button className='location-form-button' onClick={this.handleSumitSearch}>Submit<i className="fa fa-caret-right" aria-hidden="true"></i></button>
+                  <a className='location-form-button' onClick={this.handleClickCancel}>Cancel</a>
+                  <button className='location-form-button' onClick={this.handleSumitSearch}>Submit</button>
               </form>
           </div>
     }
