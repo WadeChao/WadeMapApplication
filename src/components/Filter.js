@@ -21,6 +21,37 @@ class Filter extends Component{
     }
   }
 
+  componentDidMount(){
+    const componentObject = this;
+    let locationInputs = (document.getElementsByClassName('location-form-input'));
+    Array.prototype.filter.call(locationInputs, function(input){
+      let autoComplete = new google.maps.places.Autocomplete(input);
+      autoComplete.addListener('place_changed', function() {
+            var place = autoComplete.getPlace();
+            if (!place.geometry) {
+              return;
+            }
+            if (place.geometry.viewport) {
+              if(input.name === 'startAddress'){
+                componentObject.setState({
+                    startAddress:place.name,
+                    startCheck:true,
+                    startWarning:false
+                });
+              }
+              if(input.name === 'destinationAddress'){
+                componentObject.setState({
+                  destinationAddress:place.name,
+                  destinationCheck:true,
+                  destinationWarning:false
+                });
+              }
+              componentObject.handleSumitSearch();
+            }
+      });
+    });
+  }
+
   async getLocationInfo(address){
     const geocoder = new google.maps.Geocoder();
     return new Promise((resolve,reject) => {
@@ -49,6 +80,18 @@ class Filter extends Component{
     else{
       console.log('Post route to Server error, please check your MockApi service is Running on localhost:8080')
     }
+  }
+
+
+  handlePlaceChanged = (autoComplete) => {
+    let isNonEmpty = (event.target.value !== '') ? true : false;
+    this.setState(
+      {
+        startAddress:event.target.value,
+        startCheck:isNonEmpty,
+        startWarning:false
+      }
+    );
   }
 
   handleStartAddressChanged = (event) => {
