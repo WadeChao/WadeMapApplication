@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { updateStartLocation } from '../redux/action/locationActions';
-import { updatDestinationLocation } from '../redux/action/locationActions';
+import { addRoutOffStops } from '../redux/action/locationActions';
 import mockAPIs from '../APIs/mockApi';
 
 class Filter extends Component{
@@ -15,40 +15,57 @@ class Filter extends Component{
       startCheck:false,
       destinationCheck:false,
       isReadyGetStart:false,
-      isReadyGetDest:false,
+      isReadyGetRouteOff:false,
       startWarning:false,
-      destinationWarning:false
+      destinationWarning:false,
+      midStops:[]
     }
   }
 
   componentDidMount(){
+    this.appendAutoCompleted('location-form-input');
+  }
+
+  appendAutoCompleted = (className) => {
     const componentObject = this;
-    let locationInputs = (document.getElementsByClassName('location-form-input'));
+    let locationInputs = (document.getElementsByClassName(className));
     Array.prototype.filter.call(locationInputs, function(input){
-      let autoComplete = new google.maps.places.Autocomplete(input);
-      autoComplete.addListener('place_changed', function() {
-            var place = autoComplete.getPlace();
-            if (!place.geometry) {
-              return;
-            }
-            if (place.geometry.viewport) {
-              if(input.name === 'startAddress'){
-                componentObject.setState({
-                    startAddress:place.name,
-                    startCheck:true,
-                    startWarning:false
-                });
+      if(input.autocomplete !== 'off')
+      {
+        let autoComplete = new google.maps.places.Autocomplete(input);
+        autoComplete.addListener('place_changed', function(event) {
+              var place = autoComplete.getPlace();
+              if (!place.geometry) {
+                return;
               }
-              if(input.name === 'destinationAddress'){
-                componentObject.setState({
-                  destinationAddress:place.name,
-                  destinationCheck:true,
-                  destinationWarning:false
-                });
+              if (place.geometry.viewport) {
+                if(input.name === 'startAddress'){
+                  componentObject.setState({
+                      startAddress:place.name,
+                      startCheck:true,
+                      startWarning:false
+                  });
+                }
+                else if(input.name === 'destinationAddress'){
+                  componentObject.setState({
+                    destinationAddress:place.name,
+                    destinationCheck:true,
+                    destinationWarning:false
+                  });
+                }
+                else {
+                    let midStopIndex = parseInt(input.name.substring(input.name.length-1));
+                    const {
+                      midStops
+                    } = componentObject.state;
+                    let midStopesArr = midStops;
+                    midStopesArr[midStopIndex]['address'] = place.name;
+                    componentObject.setState({midStops:midStopesArr});
+                }
+                componentObject.handleSumitSearch();
               }
-              componentObject.handleSumitSearch();
-            }
-      });
+          });
+        }
     });
   }
 
@@ -70,28 +87,23 @@ class Filter extends Component{
     })
   }
 
-  async postRoute(startLocation, destinationLocation){
-    let data = [];
-    data.push(startLocation);
-    data.push(destinationLocation);
-    const response = await mockAPIs.postRouteAPI(data);
+  async postRoute(routeArr, retry, retryDelay){
+    const response = await mockAPIs.postRouteAPI(routeArr);
     if(response.status === 200 || response.status === 201) {
     }
-    else{
-      console.log('Post route to Server error, please check your MockApi service is Running on localhost:8080')
+    else {
+      if(retry>0)
+        setTimeout(() => {this.postRoute(routeArr, --retry, retryDelay)}, retryDelay);
     }
   }
 
-
-  handlePlaceChanged = (autoComplete) => {
-    let isNonEmpty = (event.target.value !== '') ? true : false;
-    this.setState(
-      {
-        startAddress:event.target.value,
-        startCheck:isNonEmpty,
-        startWarning:false
-      }
-    );
+  handleMidStopChanged = (event, index) => {
+    const {
+      midStops
+    } = this.state;
+    let midStopesArr = midStops;
+    midStopesArr[index]['address'] = event.target.value;
+    this.setState({midStops:midStopesArr});
   }
 
   handleStartAddressChanged = (event) => {
@@ -117,15 +129,20 @@ class Filter extends Component{
   handlePostRouteToServer = () => {
     const {
       isReadyGetStart,
-      isReadyGetDest
+      isReadyGetRouteOff
     } = this.state;
     const {
       locReducer,
     } = this.props;
-    if(isReadyGetStart && isReadyGetDest){
+    if(isReadyGetStart && isReadyGetRouteOff){
+      let routeArr = [];
       const arrStart = [locReducer.startLocation.lat.toString(), locReducer.startLocation.lng.toString()];
-      const arrDest = [locReducer.destinationLocation.lat.toString(), locReducer.destinationLocation.lng.toString()];
-      this.postRoute(arrStart, arrDest);
+      routeArr.push(arrStart);
+      locReducer.routeOffStops.forEach(routeOffStop => {
+         const stop = [routeOffStop.lat.toString(), routeOffStop.lng.toString()];
+         routeArr.push(stop);
+      })
+      this.postRoute(routeArr, 3, 1000);
     }
   }
 
@@ -136,47 +153,121 @@ class Filter extends Component{
       startAddress,
       destinationAddress,
       startCheck,
-      destinationCheck
+      destinationCheck,
+      midStops
     } = this.state;
     const {
       locReducer,
       updateStartLocation,
-      updatDestinationLocation
+      addRoutOffStops
     } = this.props;
+
     if(startCheck && locReducer.startLocation.address !== startAddress){
       this.getLocationInfo(startAddress).then((value) => {
         updateStartLocation(value.address,value.lat,value.lng);
         this.setState({isReadyGetStart:true});
-      }).catch(error => {
-        this.setState({isReadyGetStart:false, startWarning:true});
+      }).then(() => {
+        this.handlePostRouteToServer();}
+      ).catch(error => {
+        this.setState({isReadyGetStart:false});
       });
     }
+   let routeOffStops = [];
+   midStops.forEach(value => {
+      if(value.address !== ''){
+        routeOffStops.push(value);
+      }
+   })
+   if(destinationCheck){
+      const destination = {address:destinationAddress};
+      routeOffStops.push(destination);
+    }
+    this.getRouteOffLocations(routeOffStops);
+  }
 
-    if(startCheck && destinationCheck){
-      this.getLocationInfo(destinationAddress).then((value) => {
-        updatDestinationLocation(value.address,value.lat,value.lng);
-        this.setState({isReadyGetDest:true});
-      }).catch(error => {
-        this.setState({isReadyGetDest:false, destinationWarning:true});
-      });
-    }
-    else{
-      updatDestinationLocation('', 0, 0);
-    }
-    this.handlePostRouteToServer();
+  getRouteOffLocations = (routeOffStops) => {
+    let routeOffStopsArr = [];
+    let getRouteOffCount = 0;
+    const {
+      addRoutOffStops
+    } = this.props;
+    routeOffStops.forEach((midStop,index) => this.getLocationInfo(midStop.address).then((value) => {
+        const stop = { address:midStop.address, lat:value.lat, lng:value.lng };
+        if(routeOffStopsArr.length === 0)
+          routeOffStopsArr.push(stop);
+        else {
+          routeOffStopsArr.splice(index, 0, stop);
+        }
+        getRouteOffCount++;
+        if(getRouteOffCount === routeOffStops.length){
+            addRoutOffStops(routeOffStopsArr);
+            this.setState({ isReadyGetRouteOff:true});
+            this.handlePostRouteToServer();
+        }
+      }).catch(error => {})
+    );
   }
 
   handleKeyPress = (event) => {
     if(event.which === 13) {
-      this.handleSumitSearch();
+      //this.handleSumitSearch();
     }
+  }
+
+  handleAddStop = () => {
+    event.preventDefault();
+    const {
+      midStops
+    } = this.state;
+    let midStopesArr = midStops;
+    let newStop = {};
+    newStop['address'] = '';
+    midStopesArr.push(newStop);
+    this.setState({midStops:midStopesArr});
+  }
+
+  renderMidStopInputAll = (midStops) => {
+    return (
+      <div>
+        {midStops.map(this.renderMidStopInput)}
+      </div>
+    )
+  }
+
+  addAutocompletedToMidStop = () => {
+    this.appendAutoCompleted('stop-form-input');
+  }
+
+  renderMidStopInput = (midStop, index) => {
+    return <div key={index}>
+             <input
+                type="text"
+                className='stop-form-input'
+                name={`midStop-${index}`}
+                placeholder='Mid stop'
+                value={midStop.address}
+                onChange={(event) => this.handleMidStopChanged(event,index)}
+             />
+             <span onClick={(event) => this.handleClickRemove(event,index)}>X</span>
+           </div>
+  }
+
+  handleClickRemove = (event,index) => {
+    event.preventDefault();
+    const {
+      midStops
+    } = this.state;
+    let midStopesArr = midStops;
+    midStopesArr.splice(index, 1);
+    this.setState({midStops:midStopesArr});
+    this.handleSumitSearch();
   }
 
   handleClickCancel = (event) => {
     event.preventDefault();
     const {
       updateStartLocation,
-      updatDestinationLocation
+      addRoutOffStops
     } = this.props;
     this.setState({
       startAddress:'',
@@ -186,10 +277,11 @@ class Filter extends Component{
       isReadyGetStart:false,
       isReadyGetDest:false,
       startWarning:false,
-      destinationWarning:false
+      destinationWarning:false,
+      midStops:[]
     });
     updateStartLocation('', 0, 0);
-    updatDestinationLocation('', 0, 0);
+    addRoutOffStops([]);
   }
 
   render() {
@@ -197,7 +289,8 @@ class Filter extends Component{
       startAddress,
       destinationAddress,
       startWarning,
-      destinationWarning
+      destinationWarning,
+      midStops
     } = this.state;
     return <div className='filter'>
               <div className='filter-title'>Wade Route Application</div>
@@ -210,7 +303,9 @@ class Filter extends Component{
                           onChange={this.handleStartAddressChanged}
                           onKeyPress={this.handleKeyPress}
                   />
-                  {startWarning && <div className='warning-msg'>Start Location not found</div>}
+                  {startWarning && <div className='warning-msg'>Start location not found</div>}
+                  {this.renderMidStopInputAll(midStops)}
+                  {this.addAutocompletedToMidStop()}
                   <input  type="text"
                           className='location-form-input'
                           name='destinationAddress'
@@ -221,7 +316,8 @@ class Filter extends Component{
                   />
                   {destinationWarning && <div className='warning-msg'>Destination not found</div>}
                   <a className='location-form-button' onClick={this.handleClickCancel}>Cancel</a>
-                  <button className='location-form-button' onClick={this.handleSumitSearch}>Submit</button>
+                  <a className='location-form-button' onClick={this.handleAddStop}>AddStop</a>
+                  <a className='location-form-button' onClick={this.handleSumitSearch}>Submit</a>
               </form>
           </div>
     }
@@ -236,8 +332,8 @@ const mapDispatchToProps = dispatch => {
     updateStartLocation:(address, lat, lng) => {
       dispatch(updateStartLocation(address,lat,lng));
     },
-    updatDestinationLocation:(address, lat, lng) => {
-      dispatch(updatDestinationLocation(address, lat, lng));
+    addRoutOffStops:(routeOffStops) => {
+      dispatch(addRoutOffStops(routeOffStops));
     }
   };
 };

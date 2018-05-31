@@ -43,6 +43,14 @@
   margin-bottom: 10px;
   border-color: #808080;
 }
+.wade-map-body .filter .location-form .stop-form-input{
+  width: 80%;
+  height: 34px;
+  border: 1px solid;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  border-color: #808080;
+}
 
 .wade-map-body .filter .location-form .location-form-button{
   margin-right: 20px;

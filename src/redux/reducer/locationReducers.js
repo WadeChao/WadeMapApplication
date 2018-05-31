@@ -4,11 +4,7 @@ const initialState = {
     lat:0,
     lng:0
   },
-  destinationLocation:{
-    address:'',
-    lat:0,
-    lng:0
-  },
+  routeOffStops:[]
 };
 
 export default function numberTodos(state=initialState,action){
@@ -18,10 +14,10 @@ export default function numberTodos(state=initialState,action){
       ...state,
       startLocation:{address: action.address, lat: action.lat, lng: action.lng}
     }
-    case 'UPDATE_DESTINATION_LOCATION':
+    case 'ADD_ROUTE_OFF_STOPS':
     return {
       ...state,
-      destinationLocation:{address: action.address, lat: action.lat, lng: action.lng}
+      routeOffStops:action.routeOffStops
     }
     default:
       return state;

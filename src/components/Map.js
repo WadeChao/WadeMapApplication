@@ -39,20 +39,30 @@ class Map extends Component{
 
   shouldComponentUpdate(nextProps, nextState){
     let isUpdate = (JSON.stringify(this.props.locReducer) === JSON.stringify(nextProps.locReducer)) ? false : true;
-    if(nextProps.locReducer.destinationLocation.address === ''){
+    if(nextProps.locReducer.routeOffStops.length === 0){
         this.clearRoute();
         isUpdate = false;
     }
     if(isUpdate){
       const start = nextProps.locReducer.startLocation.lat + ', ' +nextProps.locReducer.startLocation.lng;
-      const end = nextProps.locReducer.destinationLocation.lat + ', ' +nextProps.locReducer.destinationLocation.lng;
-      this.routeDirection(start, end);
+      const routeOffLength = nextProps.locReducer.routeOffStops.length;
+      const destination = nextProps.locReducer.routeOffStops[routeOffLength-1].lat + ', ' +nextProps.locReducer.routeOffStops[routeOffLength-1].lng;
+      let midStops = [];
+      for(let i = 0; i<routeOffLength-1; i++){
+        const stops = {
+                  location: nextProps.locReducer.routeOffStops[i].lat + ', ' + nextProps.locReducer.routeOffStops[i].lng,
+                  stopover: true
+                }
+        midStops.push(stops);
+      }
+      this.routeDirection(start, midStops, destination);
     }
+
     return isUpdate;
   }
 
-  routeDirection = (start, end) => {
-   const request = {
+  routeDirection = (start, midStops,destination) => {
+  /* const request = {
      origin: start,
      destination: end,
      travelMode: 'DRIVING'
@@ -60,7 +70,22 @@ class Map extends Component{
    this.directionsService.route(request, (result, status) => {
     if(status === 'OK')
       this.directionsDisplay.setDirections(result);
-    });
+    });*/
+    let mapObj = this;
+    this.directionsService.route({
+        origin: start,
+        destination: destination,
+        waypoints: midStops,
+        optimizeWaypoints: true,
+        travelMode: 'DRIVING'
+      }, function(response, status) {
+        if (status === 'OK') {
+          mapObj.directionsDisplay.setDirections(response);
+          var route = response.routes[0];
+        } else {
+          window.alert('Directions request failed due to ' + status);
+        }
+      });
   }
 
   moveToLocation = (lat, lng) => {
