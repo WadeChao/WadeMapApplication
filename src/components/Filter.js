@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { updateStartLocation } from '../redux/action/locationActions';
 import { addRoutOffStops } from '../redux/action/locationActions';
 import mockAPIs from '../APIs/mockApi';
+import { Button, Form, FormGroup, FormControl, HelpBlock, InputGroup, Grid, Col, Row, Label } from 'react-bootstrap';
 
 class Filter extends Component{
 
@@ -12,8 +13,6 @@ class Filter extends Component{
     this.state = {
       startAddress:'',
       destinationAddress:'',
-      startCheck:false,
-      destinationCheck:false,
       isReadyGetStart:false,
       isReadyGetRouteOff:false,
       startWarning:false,
@@ -26,47 +25,137 @@ class Filter extends Component{
     this.appendAutoCompleted('location-form-input');
   }
 
-  appendAutoCompleted = (className) => {
-    const componentObject = this;
-    let locationInputs = (document.getElementsByClassName(className));
-    Array.prototype.filter.call(locationInputs, function(input){
-      if(input.autocomplete !== 'off')
-      {
-        let autoComplete = new google.maps.places.Autocomplete(input);
-        autoComplete.addListener('place_changed', function(event) {
-              var place = autoComplete.getPlace();
-              if (!place.geometry) {
-                return;
-              }
-              if (place.geometry.viewport) {
-                if(input.name === 'startAddress'){
-                  componentObject.setState({
-                      startAddress:place.name,
-                      startCheck:true,
-                      startWarning:false
-                  });
-                }
-                else if(input.name === 'destinationAddress'){
-                  componentObject.setState({
-                    destinationAddress:place.name,
-                    destinationCheck:true,
-                    destinationWarning:false
-                  });
-                }
-                else {
-                    let midStopIndex = parseInt(input.name.substring(input.name.length-1));
-                    const {
-                      midStops
-                    } = componentObject.state;
-                    let midStopesArr = midStops;
-                    midStopesArr[midStopIndex]['address'] = place.name;
-                    componentObject.setState({midStops:midStopesArr});
-                }
-                componentObject.handleSumitSearch();
-              }
-          });
+  handleMidStopChanged = (event, index) => {
+    const {
+      midStops
+    } = this.state;
+    let midStopesArr = midStops;
+    midStopesArr[index]['address'] = event.target.value;
+    midStopesArr[index]['routeOffWarning'] = false;
+    this.setState({midStops:midStopesArr});
+  }
+
+  handleDefaultAddressChanged = (event) => {
+    if(event.target.name === 'startAddress'){
+      this.setState(
+        {
+          startAddress:event.target.value,
+          startWarning:false
         }
+      );
+    }
+    else if(event.target.name === 'destinationAddress'){
+      this.setState({
+          destinationAddress:event.target.value,
+          destinationWarning:false
+      });
+    }
+  }
+
+  handlePostRouteToServer = () => {
+    const {
+      isReadyGetStart,
+      isReadyGetRouteOff
+    } = this.state;
+    const {
+      locReducer,
+    } = this.props;
+    if(isReadyGetStart && isReadyGetRouteOff){
+      let routeArr = [];
+      const arrStart = [locReducer.startLocation.lat.toString(), locReducer.startLocation.lng.toString()];
+      routeArr.push(arrStart);
+      locReducer.routeOffStops.forEach(routeOffStop => {
+         const stop = [routeOffStop.lat.toString(), routeOffStop.lng.toString()];
+         routeArr.push(stop);
+      })
+      this.postRoute(routeArr, 3, 1000);
+    }
+  }
+
+  handleSumitSearch = (event) => {
+    if(event !== undefined)
+      event.preventDefault();
+    const {
+      startAddress,
+      destinationAddress,
+      midStops
+    } = this.state;
+    const {
+      locReducer,
+      updateStartLocation,
+      addRoutOffStops
+    } = this.props;
+    if(startAddress !== '' && locReducer.startLocation.address !== startAddress){
+      this.getLocationInfo(startAddress).then((value) => {
+        updateStartLocation(value.address,value.lat,value.lng);
+        this.setState({isReadyGetStart:true});
+      }).then(() => {
+        this.handlePostRouteToServer();}
+      ).catch(error => {
+        this.setState({startWarning:true, isReadyGetStart:false});
+      });
+    }
+    let routeOffStops = [];
+    midStops.forEach(value => {
+      if(value.address !== ''){
+        routeOffStops.push(value);
+      }
+    })
+   if(destinationAddress !== ''){
+      const destination = {address:destinationAddress};
+      routeOffStops.push(destination);
+    }
+    if(routeOffStops.length>0){
+      this.getRouteOffLocations(routeOffStops);
+    }
+    else {
+      addRoutOffStops([]);
+    }
+  }
+
+  handleAddStop = () => {
+    event.preventDefault();
+    const {
+      midStops
+    } = this.state;
+    if(midStops.length === 10)
+      return;
+    let midStopesArr = midStops;
+    let newStop = {};
+    newStop['address'] = '';
+    newStop['routeOffWarning'] = false;
+    midStopesArr.push(newStop);
+    this.setState({midStops:midStopesArr});
+  }
+
+  handleClickRemove = (event,index) => {
+    event.preventDefault();
+    const {
+      midStops
+    } = this.state;
+    let midStopesArr = midStops;
+    midStopesArr.splice(index, 1);
+    this.setState({midStops:midStopesArr});
+    this.handleSumitSearch();
+  }
+
+  handleClickCancel = (event) => {
+    event.preventDefault();
+    const {
+      updateStartLocation,
+      addRoutOffStops
+    } = this.props;
+    this.setState({
+      startAddress:'',
+      destinationAddress:'',
+      isReadyGetStart:false,
+      isReadyGetDest:false,
+      startWarning:false,
+      destinationWarning:false,
+      midStops:[]
     });
+    updateStartLocation('', 0, 0);
+    addRoutOffStops([]);
   }
 
   async getLocationInfo(address){
@@ -97,94 +186,6 @@ class Filter extends Component{
     }
   }
 
-  handleMidStopChanged = (event, index) => {
-    const {
-      midStops
-    } = this.state;
-    let midStopesArr = midStops;
-    midStopesArr[index]['address'] = event.target.value;
-    this.setState({midStops:midStopesArr});
-  }
-
-  handleStartAddressChanged = (event) => {
-    let isNonEmpty = (event.target.value !== '') ? true : false;
-    this.setState(
-      {
-        startAddress:event.target.value,
-        startCheck:isNonEmpty,
-        startWarning:false
-      }
-    );
-  }
-
-  handleDestAddressChanged = (event) => {
-    let isNonEmpty = (event.target.value !== '') ? true : false;
-    this.setState({
-        destinationAddress:event.target.value,
-        destinationCheck:isNonEmpty,
-        destinationWarning:false
-    });
-  }
-
-  handlePostRouteToServer = () => {
-    const {
-      isReadyGetStart,
-      isReadyGetRouteOff
-    } = this.state;
-    const {
-      locReducer,
-    } = this.props;
-    if(isReadyGetStart && isReadyGetRouteOff){
-      let routeArr = [];
-      const arrStart = [locReducer.startLocation.lat.toString(), locReducer.startLocation.lng.toString()];
-      routeArr.push(arrStart);
-      locReducer.routeOffStops.forEach(routeOffStop => {
-         const stop = [routeOffStop.lat.toString(), routeOffStop.lng.toString()];
-         routeArr.push(stop);
-      })
-      this.postRoute(routeArr, 3, 1000);
-    }
-  }
-
-  handleSumitSearch = (event) => {
-    if(event !== undefined)
-      event.preventDefault();
-    const {
-      startAddress,
-      destinationAddress,
-      startCheck,
-      destinationCheck,
-      midStops
-    } = this.state;
-    const {
-      locReducer,
-      updateStartLocation,
-      addRoutOffStops
-    } = this.props;
-
-    if(startCheck && locReducer.startLocation.address !== startAddress){
-      this.getLocationInfo(startAddress).then((value) => {
-        updateStartLocation(value.address,value.lat,value.lng);
-        this.setState({isReadyGetStart:true});
-      }).then(() => {
-        this.handlePostRouteToServer();}
-      ).catch(error => {
-        this.setState({isReadyGetStart:false});
-      });
-    }
-   let routeOffStops = [];
-   midStops.forEach(value => {
-      if(value.address !== ''){
-        routeOffStops.push(value);
-      }
-   })
-   if(destinationCheck){
-      const destination = {address:destinationAddress};
-      routeOffStops.push(destination);
-    }
-    this.getRouteOffLocations(routeOffStops);
-  }
-
   getRouteOffLocations = (routeOffStops) => {
     let routeOffStopsArr = [];
     let getRouteOffCount = 0;
@@ -200,30 +201,94 @@ class Filter extends Component{
         }
         getRouteOffCount++;
         if(getRouteOffCount === routeOffStops.length){
-            addRoutOffStops(routeOffStopsArr);
-            this.setState({ isReadyGetRouteOff:true});
-            this.handlePostRouteToServer();
+            if(routeOffStopsArr.length>0){
+              addRoutOffStops(routeOffStopsArr);
+              this.setState({ isReadyGetRouteOff:true});
+              this.handlePostRouteToServer();
+            }
+            else
+              this.setState({isReadyGetRouteOff:false});
         }
-      }).catch(error => {})
+      }).catch(error => {
+        this.setRouteOffWarning(midStop.address);
+        getRouteOffCount++;
+        if(getRouteOffCount === routeOffStops.length){
+          if(routeOffStopsArr.length>0){
+            addRoutOffStops(routeOffStopsArr);
+            this.setState({isReadyGetRouteOff:true});
+            this.handlePostRouteToServer();
+          }
+          else
+            this.setState({isReadyGetRouteOff:false});
+        }
+      })
     );
   }
 
-  handleKeyPress = (event) => {
-    if(event.which === 13) {
-      //this.handleSumitSearch();
+  setRouteOffWarning = (address) => {
+    const {
+      midStops,
+      destinationAddress
+    } = this.state;
+    let midStopsArr = midStops;
+    if(destinationAddress === address)
+    {
+        this.setState({destinationWarning:true});
     }
+
+    midStopsArr.forEach((value, index) => {
+      if(value.address === address){
+        midStopsArr[index]['routeOffWarning'] = true;
+        console.log('midStopsArr',midStopsArr);
+        this.setState({midStops:midStopsArr});
+        return false;
+      }
+    })
   }
 
-  handleAddStop = () => {
-    event.preventDefault();
-    const {
-      midStops
-    } = this.state;
-    let midStopesArr = midStops;
-    let newStop = {};
-    newStop['address'] = '';
-    midStopesArr.push(newStop);
-    this.setState({midStops:midStopesArr});
+  addAutocompletedToMidStop = () => {
+      this.appendAutoCompleted('stop-form-input');
+  }
+
+  appendAutoCompleted = (className) => {
+    const componentObject = this;
+    let locationInputs = (document.getElementsByClassName(className));
+    Array.prototype.filter.call(locationInputs, function(input){
+      if(input.autocomplete !== 'off')
+      {
+        let autoComplete = new google.maps.places.Autocomplete(input);
+        autoComplete.addListener('place_changed', function(event) {
+              var place = autoComplete.getPlace();
+              if (!place.geometry) {
+                return;
+              }
+              if (place.geometry.viewport) {
+                if(input.name === 'startAddress'){
+                  componentObject.setState({
+                      startAddress:place.name,
+                      startWarning:false
+                  });
+                }
+                else if(input.name === 'destinationAddress'){
+                  componentObject.setState({
+                    destinationAddress:place.name,
+                    destinationWarning:false
+                  });
+                }
+                else {
+                    let midStopIndex = parseInt(input.name.substring(input.name.length-1));
+                    const {
+                      midStops
+                    } = componentObject.state;
+                    let midStopesArr = midStops;
+                    midStopesArr[midStopIndex]['address'] = place.name;
+                    componentObject.setState({midStops:midStopesArr});
+                }
+                componentObject.handleSumitSearch();
+              }
+          });
+        }
+    });
   }
 
   renderMidStopInputAll = (midStops) => {
@@ -234,54 +299,26 @@ class Filter extends Component{
     )
   }
 
-  addAutocompletedToMidStop = () => {
-    this.appendAutoCompleted('stop-form-input');
-  }
-
   renderMidStopInput = (midStop, index) => {
-    return <div key={index}>
-             <input
-                type="text"
-                className='stop-form-input'
-                name={`midStop-${index}`}
-                placeholder='Mid stop'
-                value={midStop.address}
-                onChange={(event) => this.handleMidStopChanged(event,index)}
-             />
-             <span onClick={(event) => this.handleClickRemove(event,index)}>X</span>
-           </div>
-  }
-
-  handleClickRemove = (event,index) => {
-    event.preventDefault();
     const {
       midStops
     } = this.state;
-    let midStopesArr = midStops;
-    midStopesArr.splice(index, 1);
-    this.setState({midStops:midStopesArr});
-    this.handleSumitSearch();
-  }
-
-  handleClickCancel = (event) => {
-    event.preventDefault();
-    const {
-      updateStartLocation,
-      addRoutOffStops
-    } = this.props;
-    this.setState({
-      startAddress:'',
-      destinationAddress:'',
-      startCheck:false,
-      destinationCheck:false,
-      isReadyGetStart:false,
-      isReadyGetDest:false,
-      startWarning:false,
-      destinationWarning:false,
-      midStops:[]
-    });
-    updateStartLocation('', 0, 0);
-    addRoutOffStops([]);
+    return <div key={index}>
+            <FormGroup>
+             <Col sm={12}>
+               <InputGroup>
+                  <FormControl  type='text'
+                   className='stop-form-input'
+                   name={`midStop-${index}`}
+                   placeholder='Mid stop'
+                   value={midStop.address}
+                   onChange={(event) => this.handleMidStopChanged(event,index)}/>
+                  <InputGroup.Addon className='remove-mid-stop-input' onClick={(event) => this.handleClickRemove(event,index)}>X</InputGroup.Addon>
+                </InputGroup>
+                {midStops[index].routeOffWarning && <HelpBlock className='warning-msg'>Route off location not found</HelpBlock>}
+              </Col>
+            </FormGroup>
+           </div>
   }
 
   render() {
@@ -293,32 +330,52 @@ class Filter extends Component{
       midStops
     } = this.state;
     return <div className='filter'>
-              <div className='filter-title'>Wade Route Application</div>
-              <form className='location-form' onSubmit={event => { event.preventDefault(); }}>
-                  <input  type='text'
-                          className='location-form-input'
-                          name='startAddress'
-                          placeholder='Start'
-                          value={this.state.startAddress}
-                          onChange={this.handleStartAddressChanged}
-                          onKeyPress={this.handleKeyPress}
+              <h3 className='filter-title'>Wade Route Application</h3>
+              <Form horizontal className='location-form' onSubmit={event => { event.preventDefault(); }}>
+              <FormGroup>
+               <Col smOffset={8} sm={4}>
+                <Button bsSize="small" className='location-form-button' onClick={this.handleAddStop}>Add Stop</Button>
+               </Col>
+              </FormGroup>
+              <FormGroup>
+                <Col sm={12}>
+                  <FormControl
+                    className='location-form-input'
+                    type='text'
+                    placeholder='Start'
+                    name='startAddress'
+                    value={this.state.startAddress}
+                    onChange={this.handleDefaultAddressChanged}
                   />
-                  {startWarning && <div className='warning-msg'>Start location not found</div>}
-                  {this.renderMidStopInputAll(midStops)}
-                  {this.addAutocompletedToMidStop()}
-                  <input  type="text"
-                          className='location-form-input'
-                          name='destinationAddress'
-                          placeholder='Destination'
-                          value={this.state.destinationAddress}
-                          onChange={this.handleDestAddressChanged}
-                          onKeyPress={this.handleKeyPress}
-                  />
-                  {destinationWarning && <div className='warning-msg'>Destination not found</div>}
-                  <a className='location-form-button' onClick={this.handleClickCancel}>Cancel</a>
-                  <a className='location-form-button' onClick={this.handleAddStop}>AddStop</a>
-                  <a className='location-form-button' onClick={this.handleSumitSearch}>Submit</a>
-              </form>
+                  <FormControl.Feedback />
+                  {startWarning && <HelpBlock className='warning-msg'>Start location not found</HelpBlock>}
+                </Col>
+              </FormGroup>
+                {this.renderMidStopInputAll(midStops)}
+                {this.addAutocompletedToMidStop()}
+                <FormGroup>
+                 <Col sm={12}>
+                 <FormControl
+                 type="text"
+                    className='location-form-input'
+                    name='destinationAddress'
+                    placeholder='Destination'
+                    value={this.state.destinationAddress}
+                    onChange={this.handleDefaultAddressChanged}
+                 />
+                 <FormControl.Feedback />
+                 {destinationWarning && <HelpBlock className='warning-msg'>Destination not found</HelpBlock>}
+                 </Col>
+                </FormGroup>
+                <FormGroup>
+                 <Col sm={6}>
+                  <Button className='location-form-button' onClick={this.handleClickCancel}>Cancel</Button>
+                 </Col>
+                 <Col sm={6}>
+                  <Button className='location-form-button' onClick={this.handleSumitSearch}>Submit</Button>
+                 </Col>
+                </FormGroup>
+              </Form>
           </div>
     }
 }

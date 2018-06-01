@@ -25,48 +25,20 @@
   width: 100%;
   background-color: #f16622;
   text-align: center;
+  padding: 20px;
 }
 
 .wade-map-body .filter .filter-title{
   color: #f16622;
-  font-size: 28px;
   font-weight: bold;
-  margin-top: 20px;
-  margin-bottom: 20px;
 }
 
-.wade-map-body .filter .location-form .location-form-input{
-  width: 80%;
-  height: 34px;
-  border: 1px solid;
-  margin-top: 20px;
-  margin-bottom: 10px;
-  border-color: #808080;
-}
-.wade-map-body .filter .location-form .stop-form-input{
-  width: 80%;
-  height: 34px;
-  border: 1px solid;
-  margin-top: 20px;
-  margin-bottom: 10px;
-  border-color: #808080;
+.wade-map-body .filter .location-form .remove-mid-stop-input{
+  cursor: pointer;
 }
 
 .wade-map-body .filter .location-form .location-form-button{
-  margin-right: 20px;
-  padding: 7px 15px;
-  border: 1px solid;
-  border-color: #808080;
-  color: #808080;
-  font-size: 13px;
-  font-weight: bold;
-  text-align: center;
-  text-transform: uppercase;
-  vertical-align: middle;
-  white-space: nowrap;
-  margin-bottom: 20px;
-  margin-top: 20px;
-  background: #ffffff;
+  width: 100%;
 }
 
 .warning-msg{

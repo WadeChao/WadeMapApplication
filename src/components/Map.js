@@ -62,15 +62,6 @@ class Map extends Component{
   }
 
   routeDirection = (start, midStops,destination) => {
-  /* const request = {
-     origin: start,
-     destination: end,
-     travelMode: 'DRIVING'
-   };
-   this.directionsService.route(request, (result, status) => {
-    if(status === 'OK')
-      this.directionsDisplay.setDirections(result);
-    });*/
     let mapObj = this;
     this.directionsService.route({
         origin: start,
