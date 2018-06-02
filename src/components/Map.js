@@ -44,7 +44,7 @@ class Map extends Component{
       routeDirectionWarning
     } = this.state;
     let isUpdate = (JSON.stringify(this.props.locReducer) === JSON.stringify(nextProps.locReducer)) ? false : true;
-    if(nextProps.locReducer.routeOffStops.length === 0){
+    if(nextProps.locReducer.routeOffStops.length === 0 || nextProps.locReducer.startLocation.address === ''){
         this.clearRoute();
         isUpdate = false;
     }
