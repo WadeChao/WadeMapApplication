@@ -178,7 +178,7 @@ class Filter extends Component{
 
   async postRoute(routeArr, retry, retryDelay){
     const response = await mockAPIs.postRouteAPI(routeArr);
-    if(response.status === 200 || response.status === 201) {
+    if(response.status === 200) {
     }
     else {
       if(retry>0)
@@ -235,11 +235,9 @@ class Filter extends Component{
     {
         this.setState({destinationWarning:true});
     }
-
     midStopsArr.forEach((value, index) => {
       if(value.address === address){
         midStopsArr[index]['routeOffWarning'] = true;
-        console.log('midStopsArr',midStopsArr);
         this.setState({midStops:midStopsArr});
         return false;
       }
@@ -315,7 +313,7 @@ class Filter extends Component{
                    onChange={(event) => this.handleMidStopChanged(event,index)}/>
                   <InputGroup.Addon className='remove-mid-stop-input' onClick={(event) => this.handleClickRemove(event,index)}>X</InputGroup.Addon>
                 </InputGroup>
-                {midStops[index].routeOffWarning && <HelpBlock className='warning-msg'>Route off location not found</HelpBlock>}
+                {midStops[index].routeOffWarning && <HelpBlock className='warning-msg'>Route off location is not found</HelpBlock>}
               </Col>
             </FormGroup>
            </div>
@@ -332,50 +330,50 @@ class Filter extends Component{
     return <div className='filter'>
               <h3 className='filter-title'>Wade Route Application</h3>
               <Form horizontal className='location-form' onSubmit={event => { event.preventDefault(); }}>
-              <FormGroup>
-               <Col smOffset={8} sm={4}>
-                <Button bsSize="small" className='location-form-button' onClick={this.handleAddStop}>Add Stop</Button>
-               </Col>
-              </FormGroup>
-              <FormGroup>
-                <Col sm={12}>
-                  <FormControl
-                    className='location-form-input'
-                    type='text'
-                    placeholder='Start'
-                    name='startAddress'
-                    value={this.state.startAddress}
-                    onChange={this.handleDefaultAddressChanged}
-                  />
-                  <FormControl.Feedback />
-                  {startWarning && <HelpBlock className='warning-msg'>Start location not found</HelpBlock>}
-                </Col>
-              </FormGroup>
+                <FormGroup>
+                 <Col smOffset={8} sm={4}>
+                  <Button bsSize="small" className='location-form-button' onClick={this.handleAddStop}>Add Stop</Button>
+                 </Col>
+                </FormGroup>
+                <FormGroup>
+                  <Col sm={12}>
+                    <FormControl
+                      className='location-form-input'
+                      type='text'
+                      placeholder='Start'
+                      name='startAddress'
+                      value={this.state.startAddress}
+                      onChange={this.handleDefaultAddressChanged}
+                    />
+                    <FormControl.Feedback />
+                    {startWarning && <HelpBlock className='warning-msg'>Start location is not found</HelpBlock>}
+                  </Col>
+                </FormGroup>
                 {this.renderMidStopInputAll(midStops)}
                 {this.addAutocompletedToMidStop()}
                 <FormGroup>
-                 <Col sm={12}>
-                 <FormControl
-                 type="text"
-                    className='location-form-input'
-                    name='destinationAddress'
-                    placeholder='Destination'
-                    value={this.state.destinationAddress}
-                    onChange={this.handleDefaultAddressChanged}
-                 />
-                 <FormControl.Feedback />
-                 {destinationWarning && <HelpBlock className='warning-msg'>Destination not found</HelpBlock>}
-                 </Col>
+                  <Col sm={12}>
+                    <FormControl
+                      type="text"
+                      className='location-form-input'
+                      name='destinationAddress'
+                      placeholder='Destination'
+                      value={this.state.destinationAddress}
+                      onChange={this.handleDefaultAddressChanged}
+                    />
+                    <FormControl.Feedback />
+                    {destinationWarning && <HelpBlock className='warning-msg'>Destination is not found</HelpBlock>}
+                  </Col>
                 </FormGroup>
                 <FormGroup>
-                 <Col sm={6}>
-                  <Button className='location-form-button' onClick={this.handleClickCancel}>Cancel</Button>
-                 </Col>
-                 <Col sm={6}>
-                  <Button className='location-form-button' onClick={this.handleSumitSearch}>Submit</Button>
-                 </Col>
+                  <Col sm={6}>
+                    <Button className='location-form-button' onClick={this.handleClickCancel}>Cancel</Button>
+                   </Col>
+                   <Col sm={6}>
+                    <Button className='location-form-button' onClick={this.handleSumitSearch}>Submit</Button>
+                   </Col>
                 </FormGroup>
-              </Form>
+            </Form>
           </div>
     }
 }

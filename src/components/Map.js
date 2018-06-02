@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
+import { Alert, Button, Col } from 'react-bootstrap';
 
 class Map extends Component{
 
@@ -10,11 +11,12 @@ class Map extends Component{
     this.directionsService = new google.maps.DirectionsService();
     this.directionsDisplay = new google.maps.DirectionsRenderer();
     this.state = {
-      defaultLocation: {
+      defaultLocation:{
         center:{lat: 22.343612, lng: 114.129935},
         zoom:13,
         mapTypeId:google.maps.MapTypeId.ROADMAP
-      }
+      },
+      routeDirectionWarning:false
     }
   }
 
@@ -38,6 +40,9 @@ class Map extends Component{
   }
 
   shouldComponentUpdate(nextProps, nextState){
+    const {
+      routeDirectionWarning
+    } = this.state;
     let isUpdate = (JSON.stringify(this.props.locReducer) === JSON.stringify(nextProps.locReducer)) ? false : true;
     if(nextProps.locReducer.routeOffStops.length === 0){
         this.clearRoute();
@@ -57,8 +62,16 @@ class Map extends Component{
       }
       this.routeDirection(start, midStops, destination);
     }
-
+    if(nextState.routeDirectionWarning !== routeDirectionWarning)
+    {
+      isUpdate = true;
+    }
     return isUpdate;
+  }
+
+  handleDismissWarning = (event) => {
+    event.preventDefault();
+    this.setState({ routeDirectionWarning: false });
   }
 
   routeDirection = (start, midStops,destination) => {
@@ -67,14 +80,15 @@ class Map extends Component{
         origin: start,
         destination: destination,
         waypoints: midStops,
-        optimizeWaypoints: true,
+        optimizeWaypoints: false,
         travelMode: 'DRIVING'
       }, function(response, status) {
         if (status === 'OK') {
+          mapObj.setState({ routeDirectionWarning: false });
           mapObj.directionsDisplay.setDirections(response);
           var route = response.routes[0];
         } else {
-          window.alert('Directions request failed due to ' + status);
+          mapObj.setState({routeDirectionWarning:true});
         }
       });
   }
@@ -98,13 +112,28 @@ class Map extends Component{
      defaultLocation
    } = this.state;
    this.clearRoute();
+   this.setState({routeDirectionWarning:false});
    this.moveToLocation(defaultLocation.center.lat, defaultLocation.center.lng);
  }
 
  render() {
-  return <div className='map'>
-      <div className='myMap' ref='map'/>
-    </div>
+   const {
+     routeDirectionWarning
+   } = this.state;
+   return <div className='map'>
+            <div className='myMap' ref='map'/>
+            {routeDirectionWarning && <Alert bsStyle="danger" className='warning'>
+                <div className='warning-info'>
+                  <Col sm={12}>
+                    <strong>Your direction is not allow</strong>
+                  </Col>
+                  <Col sm={12}>
+                    <Button bsSize='small' onClick={this.handleDismissWarning}>Hide Alert</Button>
+                  </Col>
+                </div>
+               </Alert>
+            }
+          </div>
  }
 }
 
