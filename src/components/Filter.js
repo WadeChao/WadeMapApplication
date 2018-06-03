@@ -6,7 +6,7 @@ import { addRoutOffStops } from '../redux/action/locationActions';
 import mockAPIs from '../APIs/mockApi';
 import { Button, Form, FormGroup, FormControl, HelpBlock, InputGroup, Grid, Col, Row, Label } from 'react-bootstrap';
 
-class Filter extends Component{
+export class Filter extends Component{
 
   constructor(props){
     super(props);

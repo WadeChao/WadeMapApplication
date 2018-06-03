@@ -1,0 +1,95 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Route data location renders Filter correctly 1`] = `
+<div
+  className="filter"
+>
+  <h3
+    className="filter-title"
+  >
+    Wade Route Application
+  </h3>
+  <form
+    className="location-form form-horizontal"
+    onSubmit={[Function]}
+  >
+    <div
+      className="form-group"
+    >
+      <div
+        className="col-sm-4 col-sm-offset-8"
+      >
+        <button
+          className="location-form-button btn btn-sm btn-default"
+          disabled={false}
+          onClick={[Function]}
+          type="button"
+        >
+          Add Stop
+        </button>
+      </div>
+    </div>
+    <div
+      className="form-group has-feedback"
+    >
+      <div
+        className="col-sm-12"
+      >
+        <input
+          className="location-form-input form-control"
+          name="startAddress"
+          onChange={[Function]}
+          placeholder="Start"
+          type="text"
+          value=""
+        />
+      </div>
+    </div>
+    <div />
+    <div
+      className="form-group has-feedback"
+    >
+      <div
+        className="col-sm-12"
+      >
+        <input
+          className="location-form-input form-control"
+          name="destinationAddress"
+          onChange={[Function]}
+          placeholder="Destination"
+          type="text"
+          value=""
+        />
+      </div>
+    </div>
+    <div
+      className="form-group"
+    >
+      <div
+        className="col-sm-6"
+      >
+        <button
+          className="location-form-button btn btn-default"
+          disabled={false}
+          onClick={[Function]}
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+      <div
+        className="col-sm-6"
+      >
+        <button
+          className="location-form-button btn btn-default"
+          disabled={false}
+          onClick={[Function]}
+          type="button"
+        >
+          Submit
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+`;

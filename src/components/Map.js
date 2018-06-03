@@ -3,18 +3,18 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { Alert, Button, Col } from 'react-bootstrap';
 
-class Map extends Component{
+export class Map extends Component{
 
   constructor(props){
     super(props);
     this.myMap;
-    this.directionsService = new google.maps.DirectionsService();
-    this.directionsDisplay = new google.maps.DirectionsRenderer();
+    this.directionsService = new window.google.maps.DirectionsService();
+    this.directionsDisplay = new window.google.maps.DirectionsRenderer();
     this.state = {
       defaultLocation:{
         center:{lat: 22.343612, lng: 114.129935},
         zoom:13,
-        mapTypeId:google.maps.MapTypeId.ROADMAP
+        mapTypeId:'roadmap'
       },
       routeDirectionWarning:false
     }

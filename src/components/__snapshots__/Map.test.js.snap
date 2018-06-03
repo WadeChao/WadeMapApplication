@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders Map correctly 1`] = `
+<div
+  className="map"
+>
+  <div
+    className="myMap"
+  />
+</div>
+`;
