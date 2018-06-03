@@ -188,41 +188,30 @@ export class Filter extends Component{
 
   getRouteOffLocations = (routeOffStops) => {
     let routeOffStopsArr = [];
-    let getRouteOffCount = 0;
     const {
       addRoutOffStops
     } = this.props;
-    routeOffStops.forEach((midStop,index) => this.getLocationInfo(midStop.address).then((value) => {
+    var routeActions = routeOffStops.map((midStop,index) => this.getLocationInfo(midStop.address).then((value) => {
         const stop = { address:midStop.address, lat:value.lat, lng:value.lng };
         if(routeOffStopsArr.length === 0)
           routeOffStopsArr.push(stop);
         else {
           routeOffStopsArr.splice(index, 0, stop);
         }
-        getRouteOffCount++;
-        if(getRouteOffCount === routeOffStops.length){
-            if(routeOffStopsArr.length>0){
-              addRoutOffStops(routeOffStopsArr);
-              this.setState({ isReadyGetRouteOff:true});
-              this.handlePostRouteToServer();
-            }
-            else
-              this.setState({isReadyGetRouteOff:false});
-        }
       }).catch(error => {
         this.setRouteOffWarning(midStop.address);
-        getRouteOffCount++;
-        if(getRouteOffCount === routeOffStops.length){
+        }
+      ));
+      const results = Promise.all(routeActions).then(() => {
           if(routeOffStopsArr.length>0){
             addRoutOffStops(routeOffStopsArr);
-            this.setState({isReadyGetRouteOff:true});
+            this.setState({ isReadyGetRouteOff:true});
             this.handlePostRouteToServer();
           }
           else
             this.setState({isReadyGetRouteOff:false});
         }
-      })
-    );
+      );
   }
 
   setRouteOffWarning = (address) => {
